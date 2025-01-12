@@ -7,30 +7,45 @@ use std::io::{self, BufRead, BufReader};
 fn read_from_stdin() -> io::Result<Vec<i32>> {
     let stdin = io::stdin();
     let reader = stdin.lock();
-    let numbers: Result<Vec<i32>, _> = reader
-        .lines()
-        .map(|line| line?.parse::<i32>())
-        .collect();
-    numbers.map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
+    let mut numbers = Vec::new();
+
+    for line in reader.lines() {
+        let line = line?;
+        let num = line.parse::<i32>()
+            .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, format!("{}", e)))?;
+        numbers.push(num);
+    }
+
+    Ok(numbers)
 }
 
 /// Reads data from a file, one number per line
 fn read_from_file(path: &str) -> io::Result<Vec<i32>> {
     let file = File::open(path)?;
     let reader = BufReader::new(file);
-    let numbers: Result<Vec<i32>, _> = reader
-        .lines()
-        .map(|line| line?.parse::<i32>())
-        .collect();
-    numbers.map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
+    let mut numbers = Vec::new();
+
+    for line in reader.lines() {
+        let line = line?;
+        let num = line.parse::<i32>()
+            .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, format!("{}", e)))?;
+        numbers.push(num);
+    }
+
+    Ok(numbers)
 }
 
 /// Parses comma-separated values from a string
-fn parse_csv_string(input: &str) -> Result<Vec<i32>, std::num::ParseIntError> {
-    input
-        .split(',')
-        .map(|s| s.trim().parse::<i32>())
-        .collect()
+fn parse_csv_string(input: &str) -> io::Result<Vec<i32>> {
+    let mut numbers = Vec::new();
+
+    for item in input.split(',') {
+        let num = item.trim().parse::<i32>()
+            .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, format!("{}", e)))?;
+        numbers.push(num);
+    }
+
+    Ok(numbers)
 }
 
 fn main() -> io::Result<()> {
@@ -66,7 +81,7 @@ fn main() -> io::Result<()> {
         .get_one::<String>("size")
         .expect("Subset size is required")
         .parse()
-        .expect("Subset size must be a valid number");
+        .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, format!("{}", e)))?;
 
     // Get the data based on input method
     let data = if let Some(input_file) = matches.get_one::<String>("input") {
@@ -74,8 +89,7 @@ fn main() -> io::Result<()> {
         read_from_file(input_file)?
     } else if let Some(data_str) = matches.get_one::<String>("data") {
         // Parse comma-separated values
-        parse_csv_string(data_str)
-            .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?
+        parse_csv_string(data_str)?
     } else {
         // Read from stdin
         println!("Enter numbers (one per line). Press Ctrl+D (Unix) or Ctrl+Z (Windows) when done:");
