@@ -8,3 +8,4 @@ rand = "0.8"
 
 [dev-dependencies]
 random_sampling = { path = "." }
+clap = { version = "4.2", features = ["derive"] }
