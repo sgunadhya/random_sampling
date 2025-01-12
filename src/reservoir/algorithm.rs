@@ -1,26 +1,26 @@
-
-// src/reservoir/algorithm.rs
+use std::marker::PhantomData;
 use rand::Rng;
 use crate::sampler::Sampler;
 
 pub struct ReservoirSampler<T> {
     rng: rand::rngs::ThreadRng,
+    _phantom: PhantomData<T>,
 }
 
 impl<T> ReservoirSampler<T> {
     pub fn new() -> Self {
         Self {
             rng: rand::thread_rng(),
+            _phantom: PhantomData,
         }
     }
 }
 
 impl<T> Sampler<T> for ReservoirSampler<T> {
-    fn sample(&self, data: &[T], k: usize) -> Vec<T>
+    fn sample(&mut self, data: &[T], k: usize) -> Vec<T>  // Note: changed to &mut self
     where
         T: Clone,
     {
-        let mut rng = rand::thread_rng();
         let n = data.len();
 
         if k == 0 || n == 0 {
@@ -33,7 +33,7 @@ impl<T> Sampler<T> for ReservoirSampler<T> {
         let mut reservoir: Vec<T> = data[..k].to_vec();
 
         for i in k..n {
-            let j = rng.gen_range(0..=i);
+            let j = self.rng.gen_range(0..=i);  // Use self.rng instead of creating new
             if j < k {
                 reservoir[j] = data[i].clone();
             }
@@ -50,7 +50,7 @@ mod tests {
     #[test]
     fn test_reservoir_sampling() {
         let data: Vec<i32> = (1..=100).collect();
-        let sampler = ReservoirSampler::new();
+        let mut sampler = ReservoirSampler::new();  // Add mut here
         let sample = sampler.sample(&data, 10);
         assert_eq!(sample.len(), 10);
     }
@@ -58,7 +58,7 @@ mod tests {
     #[test]
     fn test_empty_input() {
         let data: Vec<i32> = vec![];
-        let sampler = ReservoirSampler::new();
+        let mut sampler = ReservoirSampler::new();  // Add mut here
         let sample = sampler.sample(&data, 5);
         assert!(sample.is_empty());
     }
